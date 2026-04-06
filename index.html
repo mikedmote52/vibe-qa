@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VibeQA — Code Audits for Vibe-Coded Apps</title>
+  <meta name="description" content="Your vibe-coded app has hidden issues. VibeQA finds them before your users do — for $49, not $500." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0d12;
+      --bg2: #12151e;
+      --bg3: #1a1e2b;
+      --border: #252a38;
+      --accent: #7c3aed;
+      --accent2: #a855f7;
+      --green: #10b981;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --card: #141820;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(11,13,18,0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .logo { font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .logo span { color: var(--accent2); }
+    .logo .badge {
+      font-size: 0.6rem; font-weight: 600;
+      background: var(--accent); color: white;
+      padding: 2px 6px; border-radius: 99px;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    nav a {
+      color: var(--muted); text-decoration: none; font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: var(--text); }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-cta {
+      background: var(--accent); color: white !important;
+      padding: 7px 16px; border-radius: 6px; font-weight: 600;
+    }
+    .nav-cta:hover { background: var(--accent2) !important; }
+
+    /* HERO */
+    .hero {
+      padding: 100px 24px 80px;
+      text-align: center;
+      max-width: 860px; margin: 0 auto;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3);
+      color: var(--accent2); font-size: 0.8rem; font-weight: 600;
+      padding: 5px 14px; border-radius: 99px; margin-bottom: 28px;
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-weight: 800; line-height: 1.15;
+      margin-bottom: 22px;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 em { font-style: normal; color: var(--accent2); }
+    .hero p {
+      font-size: 1.2rem; color: var(--muted);
+      max-width: 600px; margin: 0 auto 36px;
+    }
+    .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent); color: white;
+      padding: 14px 28px; border-radius: 8px;
+      font-weight: 700; font-size: 1rem; text-decoration: none;
+      border: none; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: var(--text);
+      padding: 14px 28px; border-radius: 8px;
+      font-weight: 600; font-size: 1rem; text-decoration: none;
+      border: 1px solid var(--border); cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* TRUST BAR */
+    .trust-bar {
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      padding: 22px 24px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 48px; flex-wrap: wrap;
+      background: var(--bg2);
+    }
+    .trust-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--muted); }
+    .trust-item strong { color: var(--text); }
+
+    /* SECTION WRAPPER */
+    .section { padding: 80px 24px; max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--accent2); font-weight: 700; margin-bottom: 14px;
+    }
+    .section-title {
+      font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+      font-weight: 800; line-height: 1.2; margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+    .section-sub { font-size: 1.1rem; color: var(--muted); max-width: 600px; margin-bottom: 52px; }
+
+    /* PROBLEM */
+    .problem-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .problem-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px;
+    }
+    .problem-icon { font-size: 1.8rem; margin-bottom: 14px; }
+    .problem-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .problem-card p { font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+    .problem-stat {
+      margin-top: 14px; padding: 10px 14px;
+      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 6px; font-size: 0.8rem; color: #fca5a5;
+    }
+
+    /* DEMO */
+    .demo-wrapper {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+    }
+    .demo-header {
+      background: var(--bg3); border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .demo-dots { display: flex; gap: 6px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ef4444; } .dot-y { background: #f59e0b; } .dot-g { background: #10b981; }
+    .demo-title { font-size: 0.85rem; color: var(--muted); font-family: monospace; }
+    .demo-body { padding: 28px; }
+
+    .scan-input-group {
+      display: flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap;
+    }
+    .scan-input {
+      flex: 1; min-width: 260px;
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); padding: 12px 16px; border-radius: 8px;
+      font-size: 0.9rem; font-family: monospace;
+      outline: none; transition: border-color 0.2s;
+    }
+    .scan-input:focus { border-color: var(--accent2); }
+    .scan-input::placeholder { color: var(--muted); }
+    .btn-scan {
+      background: var(--accent); color: white;
+      border: none; padding: 12px 24px; border-radius: 8px;
+      font-weight: 700; font-size: 0.9rem; cursor: pointer;
+      white-space: nowrap; transition: background 0.2s;
+    }
+    .btn-scan:hover { background: var(--accent2); }
+
+    #scan-result { display: none; }
+    #scan-loading { display: none; text-align: center; padding: 40px; }
+    .loading-spinner {
+      width: 36px; height: 36px; border: 3px solid var(--border);
+      border-top-color: var(--accent2);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .audit-summary {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px; margin-bottom: 28px;
+    }
+    .audit-stat {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; text-align: center;
+    }
+    .audit-stat .num { font-size: 2rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .audit-stat .label { font-size: 0.75rem; color: var(--muted); }
+    .num-red { color: var(--red); }
+    .num-yellow { color: var(--yellow); }
+    .num-blue { color: #60a5fa; }
+    .num-green { color: var(--green); }
+
+    .audit-score-bar {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    }
+    .score-circle {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; font-weight: 800; flex-shrink: 0;
+      border: 3px solid;
+    }
+    .score-poor { border-color: var(--red); color: var(--red); }
+    .score-bar-info h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+    .score-bar-info p { font-size: 0.83rem; color: var(--muted); }
+
+    .issue-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .issue-item {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 16px;
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .severity-tag {
+      font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+      white-space: nowrap; flex-shrink: 0; margin-top: 2px;
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .sev-critical { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+    .sev-high { background: rgba(249,115,22,0.15); color: #fdba74; border: 1px solid rgba(249,115,22,0.3); }
+    .sev-medium { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
+    .issue-content h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 3px; }
+    .issue-content p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+    .issue-content .fix-hint {
+      margin-top: 6px; font-size: 0.78rem;
+      color: var(--accent2); font-family: monospace;
+    }
+
+    .demo-cta {
+      text-align: center; padding: 24px;
+      background: rgba(124,58,237,0.08); border-radius: 10px;
+      border: 1px solid rgba(124,58,237,0.2);
+    }
+    .demo-cta p { color: var(--muted); font-size: 0.9rem; margin-bottom: 14px; }
+    .demo-cta p strong { color: var(--text); }
+
+    /* PRICING */
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .pricing-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 32px; position: relative;
+    }
+    .pricing-card.featured {
+      border-color: var(--accent2);
+      background: linear-gradient(135deg, rgba(124,58,237,0.1), var(--card));
+    }
+    .pricing-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--accent2); color: white;
+      font-size: 0.7rem; font-weight: 700; padding: 4px 14px;
+      border-radius: 99px; letter-spacing: 0.05em; text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .pricing-name { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .pricing-price { font-size: 2.8rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .pricing-price sup { font-size: 1.4rem; vertical-align: top; margin-top: 8px; }
+    .pricing-cadence { font-size: 0.85rem; color: var(--muted); margin-bottom: 22px; }
+    .pricing-desc { font-size: 0.9rem; color: var(--muted); margin-bottom: 22px; line-height: 1.5; }
+    .feature-list { list-style: none; margin-bottom: 28px; display: flex; flex-direction: column; gap: 10px; }
+    .feature-list li {
+      font-size: 0.88rem; display: flex; gap: 10px; align-items: flex-start;
+    }
+    .feature-list li::before { content: "✓"; color: var(--green); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .feature-list li.excluded::before { content: "✗"; color: var(--border); }
+    .feature-list li.excluded { color: var(--muted); }
+    .btn-plan {
+      width: 100%; padding: 13px; border-radius: 8px;
+      font-weight: 700; font-size: 0.95rem; cursor: pointer;
+      border: none; transition: all 0.2s; text-decoration: none;
+      display: block; text-align: center;
+    }
+    .btn-plan-primary { background: var(--accent); color: white; }
+    .btn-plan-primary:hover { background: var(--accent2); }
+    .btn-plan-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-plan-outline:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* HOW IT WORKS */
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; position: relative; }
+    .step {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px; text-align: center;
+    }
+    .step-num {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3);
+      color: var(--accent2); font-weight: 800; font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .step p { font-size: 0.87rem; color: var(--muted); line-height: 1.6; }
+    .step-icon { font-size: 1.6rem; margin-bottom: 8px; }
+
+    /* WHAT YOU GET */
+    .report-preview {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+    }
+    .report-tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+      background: var(--bg3); overflow-x: auto;
+    }
+    .tab-btn {
+      padding: 12px 20px; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; border: none; background: transparent;
+      color: var(--muted); border-bottom: 2px solid transparent;
+      white-space: nowrap; transition: all 0.2s;
+    }
+    .tab-btn.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+    .tab-content { padding: 28px; display: none; }
+    .tab-content.active { display: block; }
+    .code-block {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px; font-family: monospace;
+      font-size: 0.82rem; color: #94a3b8; line-height: 1.7;
+      overflow-x: auto; margin: 12px 0;
+    }
+    .code-line-bad { color: #fca5a5; background: rgba(239,68,68,0.07); display: block; }
+    .code-line-good { color: #86efac; background: rgba(16,185,129,0.07); display: block; }
+    .code-comment { color: #64748b; }
+    .category-check {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .category-check:last-child { border-bottom: none; }
+    .check-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+    .check-info h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 3px; }
+    .check-info p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+    /* INTAKE FORM */
+    .form-section {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 48px;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+    input, select, textarea {
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); padding: 11px 14px; border-radius: 8px;
+      font-size: 0.9rem; outline: none;
+      transition: border-color 0.2s; font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent2); }
+    textarea { resize: vertical; min-height: 90px; }
+    select option { background: var(--bg3); }
+    .form-note { font-size: 0.78rem; color: var(--muted); margin-top: 16px; }
+    .form-success {
+      display: none; text-align: center; padding: 40px;
+      background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 10px; margin-top: 20px;
+    }
+    .form-success .check-big { font-size: 2.5rem; margin-bottom: 12px; }
+    .form-success h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+    .form-success p { color: var(--muted); font-size: 0.9rem; }
+
+    /* FAQ */
+    .faq-list { max-width: 740px; display: flex; flex-direction: column; gap: 12px; }
+    .faq-item {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+    }
+    .faq-q {
+      width: 100%; text-align: left; padding: 18px 20px;
+      background: transparent; border: none; cursor: pointer;
+      color: var(--text); font-size: 0.95rem; font-weight: 600;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    }
+    .faq-q:hover { color: var(--accent2); }
+    .faq-arrow { transition: transform 0.2s; flex-shrink: 0; color: var(--muted); }
+    .faq-item.open .faq-arrow { transform: rotate(180deg); }
+    .faq-a {
+      max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+      font-size: 0.88rem; color: var(--muted); line-height: 1.7;
+    }
+    .faq-a-inner { padding: 0 20px 18px; }
+    .faq-item.open .faq-a { max-height: 300px; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 24px; text-align: center;
+      color: var(--muted); font-size: 0.85rem;
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--accent2); }
+    .footer-links { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero { padding: 60px 20px 50px; }
+      .section { padding: 60px 20px; }
+      .form-section { padding: 28px 20px; }
+      .trust-bar { gap: 20px; }
+    }
+
+    /* COMPARISON */
+    .comparison-table { width: 100%; border-collapse: collapse; }
+    .comparison-table th, .comparison-table td {
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+      font-size: 0.88rem; text-align: left;
+    }
+    .comparison-table th {
+      font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--muted); font-weight: 700; padding-bottom: 10px;
+    }
+    .comparison-table td:first-child { color: var(--muted); }
+    .comparison-table .ours { color: var(--green); font-weight: 700; }
+    .comparison-table .theirs { color: var(--muted); }
+    .comparison-table tr:last-child td { border-bottom: none; }
+    .comparison-wrapper {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden; overflow-x: auto;
+    }
+    .comparison-thead th:nth-child(2) { color: var(--accent2); }
+
+    /* GLOW */
+    .glow-accent {
+      position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="glow-accent"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <span>Vibe</span>QA
+    <div class="badge">Beta</div>
+  </div>
+  <div class="nav-links">
+    <a href="#how">How It Works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
+    <a href="#get-audit" class="nav-cta">Get My Audit →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">⚡ For vibe-coded apps built with Cursor, Bolt, Lovable &amp; Replit</div>
+  <h1>Your app probably has <em>37 problems</em>. Let's find them before your users do.</h1>
+  <p>VibeQA gives you a real code audit with actionable fix instructions — for $49, not $500. Built for founders who can't read code but can't afford broken products.</p>
+  <div class="hero-actions">
+    <a href="#get-audit" class="btn-primary">Get My Free Assessment →</a>
+    <a href="#demo" class="btn-secondary">▶ See a Sample Report</a>
+  </div>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <div class="trust-item">🔒 <span><strong>45%</strong> of AI-generated code fails security tests</span></div>
+  <div class="trust-item">🐛 <span>Avg <strong>69 issues</strong> found in vibe-coded apps</span></div>
+  <div class="trust-item">💰 <span>Traditional audits cost <strong>$500–$2,000</strong></span></div>
+  <div class="trust-item">⚡ <span>VibeQA delivers in <strong>48 hours</strong></span></div>
+</div>
+
+<!-- PROBLEM -->
+<div style="background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+<div class="section">
+  <div class="section-label">The Problem</div>
+  <div class="section-title">You built something real. But under the hood...</div>
+  <div class="section-sub">AI coding tools are incredible for getting to v1. What they don't tell you is what they left behind.</div>
+  <div class="problem-grid">
+    <div class="problem-card">
+      <div class="problem-icon">🔓</div>
+      <h3>Security gaps your users will find first</h3>
+      <p>Exposed API keys, unsanitized inputs, missing auth checks, open database endpoints. Vibe-coded apps regularly skip the boring-but-critical security patterns every developer memorizes in year one.</p>
+      <div class="problem-stat">⚠️ 45% of AI-generated code has exploitable vulnerabilities (Veracode 2025)</div>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">💸</div>
+      <h3>Silent costs waiting to spike your bill</h3>
+      <p>Inefficient queries that 10x your database costs at scale. Missing rate limits that let bots drain your API budget in hours. N+1 query patterns that work fine with 10 users and crash with 1,000.</p>
+      <div class="problem-stat">⚠️ Most vibe-coded apps have 3–7 patterns that become expensive at 500+ users</div>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">🏗️</div>
+      <h3>Architecture that won't survive growth</h3>
+      <p>Hardcoded values scattered across files. Missing error handling that produces cryptic failures. No logging, no monitoring hooks. Everything is fine until it's on fire and you can't tell why.</p>
+      <div class="problem-stat">⚠️ 62% of vibe-coded apps require significant rework before they can scale</div>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">📋</div>
+      <h3>What free scanners won't tell you</h3>
+      <p>Tools like VibeDoctor run automated checks and output lists of flags. They won't explain what it means for YOUR app, prioritize what to fix first, or give you the exact code change that resolves it.</p>
+      <div class="problem-stat">⚠️ Free tools find issues but don't tell you how to fix them in plain English</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- DEMO / INTERACTIVE PREVIEW -->
+<section id="demo" class="section">
+  <div class="section-label">Live Demo</div>
+  <div class="section-title">See what a real audit looks like</div>
+  <div class="section-sub">Enter any public GitHub repo below to get a preview scan. Full audits go deeper — this shows you the structure of what you'll receive.</div>
+  <div class="demo-wrapper">
+    <div class="demo-header">
+      <div class="demo-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+      <span class="demo-title">VibeQA Scanner — Interactive Preview</span>
+    </div>
+    <div class="demo-body">
+      <div class="scan-input-group">
+        <input type="text" class="scan-input" id="repo-input" placeholder="github.com/yourname/your-vibe-app" value="" />
+        <button class="btn-scan" id="btn-run-scan">Run Preview Scan →</button>
+      </div>
+
+      <div id="scan-loading">
+        <div class="loading-spinner"></div>
+        <p style="color: var(--muted); font-size: 0.9rem;">Analyzing repository structure, dependencies, and patterns...</p>
+      </div>
+
+      <div id="scan-result">
+        <div class="audit-score-bar">
+          <div class="score-circle score-poor" id="score-circle">D</div>
+          <div class="score-bar-info">
+            <h3 id="score-label">Security Score: Poor (32/100)</h3>
+            <p id="score-desc">Critical issues found that require immediate attention. This app is not production-ready in its current state.</p>
+          </div>
+        </div>
+
+        <div class="audit-summary">
+          <div class="audit-stat"><div class="num num-red" id="stat-critical">7</div><div class="label">Critical</div></div>
+          <div class="audit-stat"><div class="num num-yellow" id="stat-high">12</div><div class="label">High</div></div>
+          <div class="audit-stat"><div class="num num-blue" id="stat-medium">18</div><div class="label">Medium</div></div>
+          <div class="audit-stat"><div class="num num-green" id="stat-good">3</div><div class="label">Passed</div></div>
+        </div>
+
+        <div class="issue-list" id="issue-list">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="demo-cta">
+          <p><strong>This is a preview of your report structure.</strong> A full VibeQA audit goes through all your code files, identifies the exact line numbers, explains what each issue means for your business, and gives you copy-paste fixes.</p>
+          <a href="#get-audit" class="btn-primary">Get the Full Audit — $49 →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<div style="background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+<div id="how" class="section">
+  <div class="section-label">Process</div>
+  <div class="section-title">Simple. Fast. Actionable.</div>
+  <div class="section-sub">No meetings, no retainers, no consultants quoting you $5,000. Just a clear audit report you can act on.</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-icon">🔗</div>
+      <div class="step-num">1</div>
+      <h3>Share Your Repo</h3>
+      <p>Submit your GitHub repo URL (public or private — we use a scoped read-only token) along with a few context questions about your app.</p>
+    </div>
+    <div class="step">
+      <div class="step-icon">🤖</div>
+      <div class="step-num">2</div>
+      <h3>AI-Powered Deep Scan</h3>
+      <p>Our analysis engine reviews your code for security vulnerabilities, performance anti-patterns, architecture issues, and missing best practices.</p>
+    </div>
+    <div class="step">
+      <div class="step-icon">📄</div>
+      <div class="step-num">3</div>
+      <h3>Human-Readable Report</h3>
+      <p>You get a prioritized report that explains every issue in plain English — what it is, why it matters, and the exact fix. No jargon, no ambiguity.</p>
+    </div>
+    <div class="step">
+      <div class="step-icon">🛠️</div>
+      <div class="step-num">4</div>
+      <h3>Fix It (With Help if You Need It)</h3>
+      <p>Handle the fixes yourself with our step-by-step instructions, or schedule a remediation session with our team if you need hands-on help.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- WHAT'S IN THE REPORT -->
+<section class="section">
+  <div class="section-label">The Report</div>
+  <div class="section-title">What you'll actually receive</div>
+  <div class="section-sub">Not a generic checklist. A specific breakdown of your app with real fixes.</div>
+  <div class="report-preview">
+    <div class="report-tabs">
+      <button class="tab-btn active" data-tab="security">🔐 Security</button>
+      <button class="tab-btn" data-tab="performance">⚡ Performance</button>
+      <button class="tab-btn" data-tab="architecture">🏗️ Architecture</button>
+      <button class="tab-btn" data-tab="coverage">🧪 Test Coverage</button>
+    </div>
+
+    <div class="tab-content active" id="tab-security">
+      <div class="category-check">
+        <div class="check-icon">🔴</div>
+        <div class="check-info">
+          <h4>API keys hardcoded in source files</h4>
+          <p>Found 3 API keys directly in your code. These are visible to anyone with repo access and will be flagged by GitHub's secret scanner. An attacker can use these to make requests on your behalf, incur costs, or access your third-party services.</p>
+          <div class="code-block"><span class="code-line-bad">- const OPENAI_KEY = "sk-proj-abc123xyz..."  // ⚠️ Never commit secrets</span><span class="code-line-good">+ const OPENAI_KEY = process.env.OPENAI_API_KEY  // ✅ Use environment variable</span></div>
+        </div>
+      </div>
+      <div class="category-check">
+        <div class="check-icon">🔴</div>
+        <div class="check-info">
+          <h4>No input sanitization on form fields</h4>
+          <p>User inputs are passed directly to your database queries without sanitization. This exposes you to SQL injection and XSS attacks — a basic attack technique any script kid can attempt.</p>
+        </div>
+      </div>
+      <div class="category-check">
+        <div class="check-icon">🟡</div>
+        <div class="check-info">
+          <h4>Missing rate limiting on auth endpoints</h4>
+          <p>Your login and signup routes have no rate limiting. An attacker can make unlimited attempts to brute-force credentials or enumerate valid email addresses.</p>
+        </div>
+      </div>
+      <div class="category-check">
+        <div class="check-icon">🟢</div>
+        <div class="check-info">
+          <h4>HTTPS enforced correctly</h4>
+          <p>All connections are properly redirected to HTTPS. SSL certificate is valid and HSTS headers are configured.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-performance">
+      <div class="category-check">
+        <div class="check-icon">🔴</div>
+        <div class="check-info">
+          <h4>N+1 query pattern in user dashboard</h4>
+          <p>Your dashboard loads user data in a loop, making a separate database call for each user record. With 100 users this runs 101 queries. With 10,000 users it runs 10,001. This will cause your app to slow to a crawl and spike your database costs at scale.</p>
+          <div class="code-block"><span class="code-comment">// Found in dashboard.js:47</span>
+<span class="code-line-bad">- users.forEach(user => &#123; const orders = db.getOrders(user.id) &#125;)  // ⚠️ N+1</span>
+<span class="code-line-good">+ const orders = db.getOrdersByUserIds(users.map(u => u.id))  // ✅ Batch query</span></div>
+        </div>
+      </div>
+      <div class="category-check">
+        <div class="check-icon">🟡</div>
+        <div class="check-info">
+          <h4>No caching on expensive API calls</h4>
+          <p>External API calls are made on every page load with no caching layer. Adding a simple 60-second cache could reduce API costs by 80–95% under normal usage patterns.</p>
+        </div>
+      </div>
+      <div class="category-check">
+        <div class="check-icon">🟢</div>
+        <div class="check-info">
+          <h4>Images are properly compressed and lazy-loaded</h4>
+          <p>Image assets are optimized and use lazy loading correctly. Good for Core Web Vitals.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-architecture">
+      <div class="category-check">
+        <div class="check-icon">🔴</div>
+        <div class="check-info">
+          <h4>No error handling — failures are silent</h4>
+          <p>Most API calls and async operations have no try/catch or error boundaries. When something breaks, your users see a blank screen and you have no idea why. You're flying blind.</p>
+        </div>
+      </div>
+      <div class="category-check">
+        <div class="check-icon">🟡</div>
+        <div class="check-info">
+          <h4>Hardcoded configuration values in 14 files</h4>
+          <p>URLs, timeouts, limits, and feature flags are scattered across 14 different files. Changing any of them requires touching multiple places and risks introducing bugs.</p>
+        </div>
+      </div>
+      <div class="category-check">
+        <div class="check-icon">🟡</div>
+        <div class="check-info">
+          <h4>No logging or monitoring hooks</h4>
+          <p>There's no structured logging in place. When this app breaks in production, you won't know about it until a user complains — and you won't have the data to debug it.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-coverage">
+      <div class="category-check">
+        <div class="check-icon">🔴</div>
+        <div class="check-info">
+          <h4>Zero test coverage</h4>
+          <p>No unit tests, integration tests, or end-to-end tests found. Every change you make is a deployment risk. There's no safety net catching regressions before they reach users.</p>
+        </div>
+      </div>
+      <div class="category-check">
+        <div class="check-icon">🟡</div>
+        <div class="check-info">
+          <h4>No CI/CD pipeline configured</h4>
+          <p>Changes are deployed manually. Adding even a basic GitHub Actions workflow would catch errors before they reach production. We'll include a starter config in your report.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<div style="background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+<div class="section">
+  <div class="section-label">Comparison</div>
+  <div class="section-title">Why not just use a free scanner?</div>
+  <div class="section-sub">Free tools find issues. VibeQA tells you what to do about them.</div>
+  <div class="comparison-wrapper">
+    <table class="comparison-table">
+      <thead class="comparison-thead">
+        <tr>
+          <th>Feature</th>
+          <th style="color: var(--accent2);">VibeQA ($49)</th>
+          <th>Free Scanners</th>
+          <th>Manual Audit ($500+)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Finds security issues</td><td class="ours">✓ Deep analysis</td><td class="theirs">✓ Surface only</td><td class="ours">✓ Comprehensive</td></tr>
+        <tr><td>Plain-English explanations</td><td class="ours">✓ For non-developers</td><td class="theirs">✗ Technical flags only</td><td class="ours">✓ Yes</td></tr>
+        <tr><td>Exact fix instructions</td><td class="ours">✓ Copy-paste ready</td><td class="theirs">✗ You figure it out</td><td class="ours">✓ Yes</td></tr>
+        <tr><td>Business impact context</td><td class="ours">✓ "This will cost you $X"</td><td class="theirs">✗ No</td><td class="ours">✓ Yes</td></tr>
+        <tr><td>Prioritized by severity</td><td class="ours">✓ Fix these first</td><td class="theirs">~ Partial</td><td class="ours">✓ Yes</td></tr>
+        <tr><td>Turnaround time</td><td class="ours">✓ 48 hours</td><td class="theirs">✓ Instant</td><td class="theirs">5–10 business days</td></tr>
+        <tr><td>Cost</td><td class="ours">✓ $49</td><td class="ours">✓ Free</td><td class="theirs">$500–$2,000</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- PRICING -->
+<section id="pricing" class="section">
+  <div class="section-label">Pricing</div>
+  <div class="section-title">Start with a scan. Stay for the peace of mind.</div>
+  <div class="section-sub">No subscriptions required to get started. Pay for what you need.</div>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="pricing-name">One-Time Audit</div>
+      <div class="pricing-price"><sup>$</sup>49</div>
+      <div class="pricing-cadence">one time · delivered in 48 hours</div>
+      <div class="pricing-desc">A complete audit of your codebase, delivered as a prioritized PDF report with plain-English explanations and fix instructions.</div>
+      <ul class="feature-list">
+        <li>Full security vulnerability scan</li>
+        <li>Performance anti-pattern detection</li>
+        <li>Architecture review</li>
+        <li>Prioritized fix list (Critical → Low)</li>
+        <li>Plain-English explanations</li>
+        <li>Copy-paste fix snippets for top issues</li>
+        <li class="excluded">Ongoing monthly monitoring</li>
+        <li class="excluded">Direct Slack access to reviewer</li>
+      </ul>
+      <a href="#get-audit" class="btn-plan btn-plan-outline">Get My Audit →</a>
+    </div>
+
+    <div class="pricing-card featured">
+      <div class="pricing-badge">Most Popular</div>
+      <div class="pricing-name">Monthly Monitor</div>
+      <div class="pricing-price"><sup>$</sup>79</div>
+      <div class="pricing-cadence">per month · cancel anytime</div>
+      <div class="pricing-desc">Initial audit plus monthly re-scans as you ship new code. Catch regressions and new issues before your users do.</div>
+      <ul class="feature-list">
+        <li>Everything in One-Time Audit</li>
+        <li>Monthly re-scans as you ship</li>
+        <li>Email alerts for new critical issues</li>
+        <li>Progress tracking (issues resolved)</li>
+        <li>Priority 24hr turnaround</li>
+        <li>Slack access to your reviewer</li>
+        <li class="excluded">Hands-on remediation sessions</li>
+      </ul>
+      <a href="#get-audit" class="btn-plan btn-plan-primary">Start Monitoring →</a>
+    </div>
+
+    <div class="pricing-card">
+      <div class="pricing-name">Remediation Session</div>
+      <div class="pricing-price"><sup>$</sup>199</div>
+      <div class="pricing-cadence">one-time · 90 min session</div>
+      <div class="pricing-desc">A working session where we pair with you (or your developer) to fix the critical issues found in your audit. Leave with resolved vulnerabilities, not just a to-do list.</div>
+      <ul class="feature-list">
+        <li>Everything in One-Time Audit</li>
+        <li>90-minute live session via Zoom</li>
+        <li>Fix critical &amp; high issues together</li>
+        <li>Screen share &amp; code collaboration</li>
+        <li>Written summary of changes made</li>
+        <li>30-day follow-up scan included</li>
+      </ul>
+      <a href="#get-audit" class="btn-plan btn-plan-outline">Book a Session →</a>
+    </div>
+  </div>
+</section>
+
+<!-- INTAKE FORM -->
+<div style="background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+<div id="get-audit" class="section">
+  <div class="section-label">Get Started</div>
+  <div class="section-title">Request your free assessment</div>
+  <div class="section-sub">Tell us about your app and we'll follow up within 4 business hours with next steps. No payment until you see the scope and agree.</div>
+
+  <div class="form-section">
+    <form id="audit-form">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="name">Your Name</label>
+          <input type="text" id="name" name="name" placeholder="Alex Johnson" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" placeholder="alex@yourstartup.com" required />
+        </div>
+        <div class="form-group full">
+          <label for="repo">GitHub Repo URL</label>
+          <input type="url" id="repo" name="repo" placeholder="https://github.com/yourname/your-app" />
+        </div>
+        <div class="form-group">
+          <label for="tool">Built with which AI tool?</label>
+          <select id="tool" name="tool">
+            <option value="">Select one...</option>
+            <option>Cursor</option>
+            <option>Bolt</option>
+            <option>Lovable</option>
+            <option>Replit</option>
+            <option>GitHub Copilot</option>
+            <option>Windsurf</option>
+            <option>Other / Mix</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="service">Service you're interested in</label>
+          <select id="service" name="service">
+            <option value="">Select one...</option>
+            <option>One-Time Audit ($49)</option>
+            <option>Monthly Monitor ($79/mo)</option>
+            <option>Remediation Session ($199)</option>
+            <option>Not sure — just want info</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label for="context">Tell us about your app (optional)</label>
+          <textarea id="context" name="context" placeholder="What does your app do? Any specific concerns? Are you pre-launch or already live with users?"></textarea>
+        </div>
+      </div>
+      <div style="margin-top: 24px;">
+        <button type="submit" class="btn-primary" style="font-size: 1rem; padding: 15px 32px;">
+          Request Free Assessment →
+        </button>
+      </div>
+      <p class="form-note">No payment required to request an assessment. We'll review your app context and follow up with a scope confirmation before any charges. Private repos welcome — we use read-only access tokens.</p>
+    </form>
+    <div class="form-success" id="form-success">
+      <div class="check-big">✅</div>
+      <h3>Assessment request received!</h3>
+      <p>We'll review your submission and follow up at your email address within 4 business hours. Check your inbox (and spam folder just in case).</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- FAQ -->
+<section id="faq" class="section">
+  <div class="section-label">FAQ</div>
+  <div class="section-title">Common questions</div>
+  <div class="faq-list">
+    <div class="faq-item">
+      <button class="faq-q">Do you need access to my private repo? <span class="faq-arrow">▾</span></button>
+      <div class="faq-a"><div class="faq-a-inner">For private repos, we'll ask you to grant a read-only personal access token scoped to just that repo. We never commit code, push changes, or retain access after the audit is complete. You can revoke the token after you receive your report. Public repos require no access setup at all.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">What if I can't read the fixes — I'm not a developer? <span class="faq-arrow">▾</span></button>
+      <div class="faq-a"><div class="faq-a-inner">That's exactly who VibeQA is built for. Every issue is explained in plain English: what it is, what happens if you don't fix it, and how to fix it. If the fix is a code change, we give you the exact snippet to paste in. If you get stuck, the Remediation Session tier has a 90-minute live session where we fix the critical issues together.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">How is this different from running VibeDoctor or another free scanner? <span class="faq-arrow">▾</span></button>
+      <div class="faq-a"><div class="faq-a-inner">Free automated scanners produce lists of flags and severity scores. What they don't do: explain what each issue means for your specific app, tell you which five things to fix this week vs. which ones can wait, give you copy-paste code fixes, or put the issues in business context ("this could cost you $X in API costs" or "this vulnerability has been exploited in the wild"). VibeQA bridges the gap between "here's a list of problems" and "here's what to do Monday morning."</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">My app is already live with real users. Is it too late? <span class="faq-arrow">▾</span></button>
+      <div class="faq-a"><div class="faq-a-inner">It's never too late to audit, and auditing after launch is actually more common than before. The report will tell you what's already exploitable and how urgently each issue needs attention. Some things can wait; some things need fixing today. The sooner you know, the better. An audit before you get more users is cheaper than the breach it prevents.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">What kinds of apps do you audit? <span class="faq-arrow">▾</span></button>
+      <div class="faq-a"><div class="faq-a-inner">We primarily audit JavaScript/TypeScript apps (Next.js, React, Node, Express), Python apps (FastAPI, Flask, Django), and general web applications built with Supabase, Firebase, or similar backend services — which is the vast majority of what Cursor, Bolt, Lovable, and Replit produce. If you're unsure whether your stack is covered, mention it in the assessment form and we'll confirm.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">What if the report finds nothing serious? <span class="faq-arrow">▾</span></button>
+      <div class="faq-a"><div class="faq-a-inner">It means your app is in better shape than average — that's genuinely valuable to know. You'll still receive the full report with any medium/low issues, and we'll note what's working well. If the audit is truly clean (very rare for a vibe-coded app) and you're unsatisfied, reach out and we'll discuss it.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="#how">How It Works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#get-audit">Get Audit</a>
+    <a href="#faq">FAQ</a>
+    <a href="mailto:mike@moteops.com">mike@moteops.com</a>
+  </div>
+  <p>© 2026 VibeQA · A <a href="#">Mote Ops</a> product · Code audits for the vibe coding era</p>
+</footer>
+
+<script>
+  // DEMO SCANNER
+  const issueTemplates = [
+    {
+      severity: 'critical', tag: 'CRITICAL',
+      title: 'API keys hardcoded in source files',
+      desc: 'Found credentials committed directly to your repository. Anyone with repo access — or anyone who ever had access — can see these keys.',
+      fix: 'Move to .env files and add .env to .gitignore immediately.'
+    },
+    {
+      severity: 'critical', tag: 'CRITICAL',
+      title: 'No input sanitization on database queries',
+      desc: 'User-controlled data is passed directly into queries without sanitization. SQL injection and NoSQL injection attacks are straightforward to execute against this pattern.',
+      fix: 'Use parameterized queries or a query builder that handles escaping.'
+    },
+    {
+      severity: 'high', tag: 'HIGH',
+      title: 'Authentication tokens stored in localStorage',
+      desc: 'Session tokens in localStorage are accessible to any JavaScript on the page, including injected scripts from XSS attacks. Use httpOnly cookies instead.',
+      fix: 'Switch to httpOnly, Secure, SameSite=Strict cookies for auth tokens.'
+    },
+    {
+      severity: 'high', tag: 'HIGH',
+      title: 'No rate limiting on public API endpoints',
+      desc: 'Your API endpoints accept unlimited requests. A bot can enumerate data, brute-force auth, or DDoS your service trivially.',
+      fix: 'Add express-rate-limit or equivalent — 5-10 minutes to implement.'
+    },
+    {
+      severity: 'high', tag: 'HIGH',
+      title: 'N+1 database query pattern detected',
+      desc: 'Fetching related records inside a loop creates one DB query per record. At 1,000 users this becomes 1,000+ queries per page load.',
+      fix: 'Batch your queries: fetch all related records in one call using WHERE id IN (...).'
+    },
+    {
+      severity: 'medium', tag: 'MEDIUM',
+      title: 'No error boundaries — crashes show blank screens',
+      desc: 'Unhandled errors surface as white screens to users with no fallback UI or error reporting. You have no visibility into production crashes.',
+      fix: 'Wrap components in React error boundaries and add Sentry (free tier).'
+    }
+  ];
+
+  document.getElementById('btn-run-scan').addEventListener('click', function() {
+    const input = document.getElementById('repo-input').value.trim() || 'github.com/example/demo-app';
+    const loading = document.getElementById('scan-loading');
+    const result = document.getElementById('scan-result');
+
+    result.style.display = 'none';
+    loading.style.display = 'block';
+
+    // Simulate scan with varied results based on input
+    setTimeout(() => {
+      loading.style.display = 'none';
+      result.style.display = 'block';
+
+      // Generate some variation
+      const seed = input.length % 3;
+      const critCount = 5 + seed * 2;
+      const highCount = 9 + seed;
+      const medCount = 14 + seed * 3;
+      const goodCount = 2 + seed;
+      const score = 25 + seed * 8;
+
+      document.getElementById('stat-critical').textContent = critCount;
+      document.getElementById('stat-high').textContent = highCount;
+      document.getElementById('stat-medium').textContent = medCount;
+      document.getElementById('stat-good').textContent = goodCount;
+
+      const scoreGrade = score < 40 ? 'D' : score < 60 ? 'C' : 'B';
+      const scoreLabel = score < 40 ? 'Poor' : score < 60 ? 'Fair' : 'Moderate';
+      document.getElementById('score-circle').textContent = scoreGrade;
+      document.getElementById('score-label').textContent = `Security Score: ${scoreLabel} (${score}/100)`;
+      document.getElementById('score-desc').textContent = critCount > 4
+        ? 'Critical issues found that require immediate attention. This app is not production-ready in its current state.'
+        : 'Several high-priority issues found. Address critical items before scaling traffic.';
+
+      // Show 3-4 issues
+      const list = document.getElementById('issue-list');
+      list.innerHTML = '';
+      const shown = issueTemplates.slice(0, 4);
+      shown.forEach(issue => {
+        const sevClass = issue.severity === 'critical' ? 'sev-critical' : issue.severity === 'high' ? 'sev-high' : 'sev-medium';
+        list.innerHTML += `
+          <div class="issue-item">
+            <span class="severity-tag ${sevClass}">${issue.tag}</span>
+            <div class="issue-content">
+              <h4>${issue.title}</h4>
+              <p>${issue.desc}</p>
+              <div class="fix-hint">→ Fix: ${issue.fix}</div>
+            </div>
+          </div>`;
+      });
+
+      result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 2200);
+  });
+
+  // Auto-run demo with a sample repo name after a moment
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.getElementById('repo-input').value = 'github.com/acme/my-saas-app';
+    }, 800);
+  });
+
+  // REPORT TABS
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + tab).classList.add('active');
+    });
+  });
+
+  // FAQ ACCORDION
+  document.querySelectorAll('.faq-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.parentElement;
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    });
+  });
+
+  // FORM SUBMISSION
+  document.getElementById('audit-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    // In production: POST to Formspree or backend
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    console.log('Form submission:', data);
+
+    // Simulate submission
+    e.target.style.display = 'none';
+    document.getElementById('form-success').style.display = 'block';
+
+    // In production, POST to:
+    // fetch('https://formspree.io/f/YOUR_FORM_ID', { method: 'POST', body: formData })
+  });
+</script>
+</body>
+</html>
