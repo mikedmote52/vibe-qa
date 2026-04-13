@@ -812,7 +812,10 @@
   <div class="section-sub">Tell us about your app and we'll follow up within 4 business hours with next steps. No payment until you see the scope and agree.</div>
 
   <div class="form-section">
-    <form id="audit-form">
+    <form id="audit-form" action="https://formsubmit.co/mikedmote@yahoo.com" method="POST">
+    <input type="hidden" name="_subject" value="New Lead: VibeQA">
+    <input type="hidden" name="_captcha" value="false">
+    <input type="text" name="_honey" style="display:none">
       <div class="form-grid">
         <div class="form-group">
           <label for="name">Your Name</label>
@@ -1041,17 +1044,24 @@
   // FORM SUBMISSION
   document.getElementById('audit-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    // In production: POST to Formspree or backend
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
-    console.log('Form submission:', data);
+    const form = e.target;
+    const formData = new FormData(form);
+    const btn = form.querySelector('.btn-primary');
+    if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
 
-    // Simulate submission
-    e.target.style.display = 'none';
-    document.getElementById('form-success').style.display = 'block';
-
-    // In production, POST to:
-    // fetch('https://formspree.io/f/YOUR_FORM_ID', { method: 'POST', body: formData })
+    fetch('https://formsubmit.co/ajax/mikedmote@yahoo.com', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      form.style.display = 'none';
+      document.getElementById('form-success').style.display = 'block';
+    })
+    .catch(error => {
+      if (btn) { btn.textContent = 'Try Again'; btn.disabled = false; }
+      alert('Something went wrong. Please try again or email mike@moteops.com directly.');
+    });
   });
 </script>
 <script defer data-domain="mikedmote52.github.io" src="https://plausible.io/js/script.js"></script>
